@@ -1,19 +1,19 @@
 # Add support for postinstall file and script:
 class linux_postinstall(
-  $packages  = undef,
-  $file      = undef,
-  $recurse   = false,
-  $command,
-  $arguments = undef,
+  $install_packages = undef,
+  $upload_share     = 'puppet:///modules/linux_postinstall',
+  $upload_file      = undef,
+  $upload_recursive = false,
+  $execute_file_command,
 ) {
 
-  $exec_provider = undef
   $path = "${vardir}/staging:${vardir}/staging/${file}:${::path}"
   $vardir  = $::puppet_vardir,
 
-  if $packages {
-    $pkg = split($packages, ',')
-    package { $pkg:
+  if $install_packages {
+    $packages = split($install_packages, ',')
+
+    package { $packages:
       ensure => present,
     }
   }
@@ -26,23 +26,29 @@ class linux_postinstall(
     }
 
     file { "${staging}/${file}":
-      source  => "puppet:///modules/postinstall/${file}",
-      recurse => $recurse,
+      source  => "${upload_share}/${upload_file}",
+      recurse => $upload_recursive,
       before  => Exec[$name],
+    }
+
+    if $upload_recursive {
+      $cwd = "${staging}/${file}"
+    } else {
+      $cwd = $staging
     }
   }
 
-  $exec_result = "${::puppet_vardir}/postinstall"
+  $exec_lck = "${vardir}/postinstall.lck"
 
   exec { postinstall:
-    command   => "${command} ${arguments}",
+    command   => $execute_file_command,
     path      => $path,
-    creates   => $exec_result,
+    cwd       => $cwd,
+    creates   => $exec_lck,
     logoutput => true,
-    provider  => $exec_provider,
   }
 
-  file { $exec_result:
+  file { $exec_lck:
     ensure  => file,
     require => Exec[$name],
   }
