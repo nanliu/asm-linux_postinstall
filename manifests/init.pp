@@ -1,28 +1,22 @@
 # Add support for postinstall file and script:
-class postinstall(
-  $windows_share = undef,
-  $file          = undef,
-  $recurse       = false,
+class linux_postinstall(
+  $packages  = undef,
+  $file      = undef,
+  $recurse   = false,
   $command,
-  $arguments     = undef,
+  $arguments = undef,
 ) {
 
-  case $::osfamily {
-    'Windows': {
-      $exec_provider = powershell
-      if $windows_share {
-        $path = $windows_share
-      } else {
-        $path = $::path
-      }
-    }
-    default: {
-      $exec_provider = undef
-      $path = "${vardir}/staging:${vardir}/staging/${file}:${::path}"
+  $exec_provider = undef
+  $path = "${vardir}/staging:${vardir}/staging/${file}:${::path}"
+  $vardir  = $::puppet_vardir,
+
+  if $packages {
+    $pkg = split($packages, ',')
+    package { $pkg:
+      ensure => present,
     }
   }
-
-  $vardir  = $::puppet_vardir,
 
   if $file {
     $staging = "${vardir}/staging"
