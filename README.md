@@ -1,2 +1,2 @@
-asm-linux_postinstall
-=====================
+asm-postinstall
+===============
